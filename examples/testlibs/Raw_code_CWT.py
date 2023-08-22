@@ -1,6 +1,7 @@
 import numpy as np
 from Artef_sig import doublesin
 import matplotlib.pyplot as plt
+from wavelets_func import morlet_wavelet
 
 def convolve(signal1, signal2, mode = None):
     print('conv_calc')
@@ -23,18 +24,6 @@ def convolve(signal1, signal2, mode = None):
         output_signal = np.array(output_signal)[fromm:to]
 
     return output_signal
-
-
-def morlet_wavelet(t, scale, omega0 = 5, norm = 2):
-    scaled = None
-    t = np.arange(0, t) - (t - 1.0) / 2
-    t = t / scale
-    if norm == 1:
-        wavelet =  np.pi ** (-0.25) *((np.exp(1j*omega0*t)-np.exp(-(omega0**2/2)))*np.exp(-(t**2/2)))
-        scaled = np.sqrt(1/scale) * wavelet
-    if norm == 2:
-        scaled = np.pi ** (-0.25) * ((np.exp(1j * omega0 * t) - np.exp(-(omega0 ** 2 / 2))) * np.exp(-(t ** 2 / 2)))
-    return scaled
 
 def cwt(signal, scales, complex = False):
     n = len(signal)
