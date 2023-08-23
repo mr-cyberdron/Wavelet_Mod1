@@ -7,6 +7,12 @@ import matplotlib.pyplot as plt
 
 fs = 1000
 sig, t = doublesin(20,50,fs,2)
+#-----tmp----#
+fs = 500
+from Artef_sig import sigTotest
+sig = sigTotest(fs=fs)
+t = np.arange(0, len(sig)/fs, 1/fs)
+#------------#
 # Define wavelets
 wavelet = 'morl'
 num_scales = 80
