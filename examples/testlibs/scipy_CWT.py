@@ -1,17 +1,17 @@
 import numpy as np
-from Artef_sig import doublesin
 import matplotlib.pyplot as plt
 from scipy import signal
+from Artef_sig import sigTotest
 
-fs = 1000
-sig, t = doublesin(20,50,fs,2)
-# Define wavelets
-wavelet = signal.morlet2
+fs = 500
+sig = sigTotest(fs=fs,part_t=0.1)
+t = np.arange(0, len(sig)/fs, 1/fs)
 num_scales = 80
+scales = np.arange(1, num_scales)
+wavelet = signal.morlet2
 
-scales = np.arange(1,num_scales)
+cwtmatr = signal.cwt(sig, wavelet, scales, dtype=np.float64)
 
-cwtmatr = signal.cwt(sig, wavelet, scales)
 #cwtmatr_yflip = np.flipud(cwtmatr)
 
 # Plot the results
