@@ -76,10 +76,12 @@ def normalized_cosine_similarity(vector1, vector2):
     norm_v2 = 0
 
     for val1, val2 in zip(vector1, vector2):
+
         diff_cof = def_window(val1,val2)
         # diff_cof = rectangular_window(val1,val2, min_bound=0.5, max_bound= 2)
         # diff_cof = tukey_window(val1,val2,min_bound= 0.5,max_bound= 2)
-        # Use the complex conjugate of val1
+
+        # Use the complex conjugate of val1 (from complex scalar product)
         dot_prod += (val1 * np.conj(val2))*diff_cof
         norm_v1 += np.abs(val1) ** 2
         norm_v2 += np.abs(val2) ** 2
