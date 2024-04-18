@@ -1,6 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
+
 from Artef_sig import sigTotest
 from wavelets_func import morlet_wavelet
 
@@ -13,6 +14,72 @@ import pywt
 from scipy import signal
 
 import pandas as pd
+
+
+
+def convolve_cosine_sim_based_mod(sig, wavelet):
+    if len(wavelet)%2 != 0:
+        wavelet = wavelet[1:]
+    wavle_half_pos = int(np.round(len(wavelet)/2))
+    padded_sig = np.pad(sig, (wavle_half_pos, wavle_half_pos), 'constant', constant_values=(0, 0))
+
+
+    similarity_results_mass = np.zeros(len(padded_sig))
+    for i in range(len(padded_sig)):
+        compared_part = padded_sig[i:i+len(wavelet)]
+
+        # plt.figure()
+        # plt.subplot(2, 1, 1)
+        # plt.plot(compared_part)
+        # plt.subplot(2, 1, 2)
+        # plt.plot(np.real(wavelet))
+        # plt.show()
+
+        similarity_results_mass[i] = normalized_cosine_similarity(compared_part,np.real(wavelet))
+        # print(compared_part)
+        # print(np.real(wavelet))
+        # print(similarity_results_mass[i])
+        # print('+++++++++++++++++++++++++++++')
+
+    cosine_sim_convolved = similarity_results_mass[1:-wavle_half_pos]
+    return cosine_sim_convolved
+
+def normalized_cosine_similarity(vector1, vector2):
+    dot_prod = 0
+    norm_v1 = 0
+    norm_v2 = 0
+    for val1, val2 in zip(vector1,vector2):
+        if val1 == 0:
+            val1 = 0.00001
+        if val2 == 0:
+            val2 = 0.00001
+        #diff_cof = 1
+        diff_cof = def_window(val1,val2)
+        #diff_cof = rectangular_window(val1, val2, min_bound=0.8, max_bound=1.2)
+        #diff_cof = tukey_window(val1,val2,min_bound=0.8,max_bound=1.2)
+        dot_prod += (val1*val2)*diff_cof
+        norm_v1 +=(val1**2)
+        norm_v2+=(val2**2)
+        cos_similarity_result = (dot_prod/(np.sqrt(norm_v1)*np.sqrt(norm_v2)))
+
+        # print(dot_prod)
+        # print(norm_v1)
+        # print(norm_v2)
+        # print(cos_similarity_result)
+        # plt.figure()
+        # plt.subplot(2, 1, 1)
+        # plt.plot(vector1)
+        # plt.subplot(2, 1, 2)
+        # plt.plot(vector2)
+        # plt.show()
+    return cos_similarity_result
+
+def def_window(val1,val2):
+    if val1 == 0 and val2==0:
+        return 0
+    diff_cof = min(abs(val1), abs(val2)) / max(abs(val1), abs(val2))
+    diff_cof = diff_cof ** 1
+    return diff_cof
 
 def plot(sig, block = True):
     plt.figure()
@@ -86,8 +153,12 @@ def custom_conv_with_metric(sig, wavelet_body):
 
         #similarity_coef = sf.Cosine_similarity(signal_part_mass, np.real(wavelet_part_mass))
         #similarity_coef = sf.Pearson_Corr(signal_part_mass, np.real(wavelet_part_mass))
-        similarity_coef = sf.normalized_cosine_similarity(signal_part_mass,np.real(wavelet_part_mass))
-
+        # similarity_coef = sf.normalized_cosine_similarity(signal_part_mass,np.real(wavelet_part_mass))
+        similarity_coef = normalized_cosine_similarity(signal_part_mass, np.real(wavelet_part_mass))
+        # print(signal_part_mass)
+        # print(np.real(wavelet_part_mass))
+        # print(similarity_coef)
+        # print('---------------------------')
         output_mass[int(sig_point_num)] = similarity_coef
 
 
@@ -106,8 +177,29 @@ def cwt_customized(signal, scales):
     for ind, scale in enumerate(scales):
         wavelet_data = np.conj(morlet_wavelet(n, scale))
         wavelet_body = waveletBody(wavelet_data, amp_norm=0.01)
+        print(f'{ind}/{len(scales)}')
+        # plt.figure()
+        # plt.subplot(2, 1, 1)
+        # plt.plot(signal)
+        # plt.subplot(2, 1, 2)
+        # plt.plot(np.real(wavelet_body))
+        # plt.show()
         # custom_cwt_matrix[ind, :] = np.convolve(signal, wavelet_body, mode='same')
         custom_cwt_matrix[ind, :] = custom_conv_with_metric(signal,wavelet_body)
+        # print(len(custom_cwt_matrix[ind, :]))
+        # input(custom_cwt_matrix[ind, :])
+
+        custom_cwt_matrix[ind, :] = convolve_cosine_sim_based_mod(signal, wavelet_body)
+        print(len(custom_cwt_matrix[ind, :]))
+        input(custom_cwt_matrix[ind, :])
+    # plt.figure()
+    # X, Y = np.meshgrid(list(range(len(signal))), scales)
+    # plt.pcolormesh(X, Y, np.abs(custom_cwt_matrix), cmap='viridis')
+    # plt.colorbar(label='Magnitude')
+    # plt.xlabel('Time')
+    # plt.ylabel('Scale')
+    # plt.title('Continuous Wavelet Transform (CWT) with Morlet Wavelet')
+    # plt.show()
     return custom_cwt_matrix
 
 def icwt(coefficients, scales):
