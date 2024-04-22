@@ -1,6 +1,8 @@
+import copy
+
 import numpy as np
 import matplotlib.pyplot as plt
-from Convolve_mod import convolve_same2, custom_conv_with_metric, convolve_cosine_sim_based_mod
+from Convolve_mod import convolve_same2, custom_conv_with_metric, convolve_cosine_sim_based_mod, convolve_mod
 def morlet_wavelet(t, w=6.0):
     wavelet = np.exp(1j * w * t) * np.exp(-0.5 * t ** 2) * np.pi ** (-0.25)
     return wavelet
@@ -88,10 +90,9 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
 
         # -----------------mod----------------#
         wavelet_data = cut_wavelet(wavelet_data)
-
+        wavelet_data_old = copy.deepcopy(wavelet_data)
         # scale wavelet_to_targe
         wavelet_data = (wavelet_data/max(wavelet_data))*Amp_correction_target_amp
-        # scale_correction = max(wavelet_data)/Amp_correction_target_amp
         # scale_corrections_mass.append(scale_correction)
         # -------------------------------------
 
@@ -108,7 +109,8 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
         # output[i, :] = convolve_same2(signal, np.conj(wavelet_data))
         # output[i, :] = custom_conv_with_metric(signal, np.conj(wavelet_data))
 
-        output[i, :] = convolve_cosine_sim_based_mod(signal, np.conj(wavelet_data))
+        output[i, :] = convolve_cosine_sim_based_mod(signal, np.conj(wavelet_data),Amp_correction_target_amp)*max(wavelet_data_old)
+        # output[i, :] = convolve_mod(signal, np.conj(wavelet_data_old))
 
     # -----Plot Wavelet spectrums----#
     if plot_wavelets_spectrum:

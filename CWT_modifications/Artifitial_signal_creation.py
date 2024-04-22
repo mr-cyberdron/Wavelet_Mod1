@@ -130,6 +130,8 @@ def simulate_ecg_with_VLP_ALP(duration = 20, #sec
     #ecg = filter_breath(ecg, fs)
     ecg = add_lap(ecg,fs, lap_scale=lap_amp*0.001)#10
     ecg = add_lvp(ecg,fs, lvp_scale=lvp_amp*0.001)#30
+    ecg = AnalogFilterDesign(ecg, fs).lp(order=5, cutoff=150).zerophaze().butter() \
+        .filtration()
     if unregular_comp:
         r = np.random.RandomState(random_state)#11
         ecg = add_unregular_component(ecg, fs,

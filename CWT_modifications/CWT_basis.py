@@ -100,6 +100,30 @@ if __name__ == '__main__':
     t = np.linspace(0, t_sec, n_samps)
     signal = np.sin(2 * np.pi * 5 * t) + np.sin(2 * np.pi * 10 * t) + np.sin(2 * np.pi * 8 * t) * 1
     scales = np.linspace(3, 100, 20)
+
+    scales = np.linspace(3, 40, 10)
+    print(scales)
+
+
+    def scale_to_frequency(scales, w0=6, fs=100):
+        """Перевод масштабов вейвлета в частоты для вейвлета Морле."""
+        dt = 1 / fs  # Вычисление временного шага из частоты дискретизации
+        return w0 / (2 * np.pi * scales * dt)
+
+
+    def freq_to_scale(freq, w0=6, fs=100):
+        dt = 1 / fs
+        scale = w0 / (freq * 2 * np.pi * dt)
+        return scale
+
+
+    freqs = scale_to_frequency(scales,w0 = 6,fs = fs)
+    print(freqs)
+    scales_rec = freq_to_scale(250,w0=6,fs=fs)
+    print(scales_rec)
+    input('ss')
+
+
     cwt_coefficients = cwt(signal, scales, morlet_wavelet, dt=1, fs=fs,w0=6, plot_wavelets_spectrum=True)
     reconstructed_signal = icwt(cwt_coefficients, scales, morlet_wavelet, dt=1, ds=1)
 

@@ -4,24 +4,34 @@ import matplotlib.pyplot as plt
 # from CWT_basis import cwt,icwt,morlet_wavelet,scale_to_frequency
 from CWT_mod1 import cwt,icwt,morlet_wavelet,scale_to_frequency
 import numpy as np
+from AnalogFilters import AnalogFilterDesign
 
 
 if __name__ == '__main__':
     w0 = 6
-    fs = 500
+    fs = 1000
     sig = simulate_ecg_with_VLP_ALP(duration = 4, #sec
                                   fs = fs, #hz
-                                  noise_level =130, #db
+                                  noise_level =40, #db
                                   hr = 80,#bpm
-                                  Std = 2, #bpm
+                                  Std = 0, #bpm
                                   unregular_comp = False,
                                     random_state = 11,
-                                  lap_amp = 10,
-                                  lvp_amp = 30)
+                                  lap_amp = 25,
+                                  lvp_amp = 25)
+
+
 
     # sig = sig[120:600]
     # sig = sig[240:1200]
-    sig = sig[280:480]
+    # sig = sig[280:700]
+    sig = sig[560:1400]
+
+
+
+
+
+
 
     # sig = sigTotest(fs=fs)
     # print(len(sig))
@@ -29,7 +39,21 @@ if __name__ == '__main__':
     t_vector = np.array(list(range(len(sig))))/fs
 
 
-    scales = np.linspace(3, 250, 100)
+    # scales = np.linspace(2, 250, 100)
+
+    scales = np.linspace(3, 40, 40)
+
+    # def overlap_50_scales(from_scale, num_scales):
+    #     result_scales = []
+    #     n_mass = np.array(list(range(num_scales)))
+    #     for n in n_mass:
+    #         result_scales.append(from_scale * ((2 ** 0.5) ** n))
+    #     return np.array(result_scales)
+    #
+    #
+    # scales = overlap_50_scales(3, 12)
+
+
     cwt_coefficients = cwt(sig, scales, morlet_wavelet, dt=1, fs=fs,w0=6, plot_wavelets_spectrum=False)
     reconstructed_signal = icwt(cwt_coefficients, scales, morlet_wavelet, dt=1, ds=1)
 

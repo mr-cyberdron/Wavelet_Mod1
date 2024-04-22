@@ -189,9 +189,8 @@ def cwt_customized(signal, scales):
         # print(len(custom_cwt_matrix[ind, :]))
         # input(custom_cwt_matrix[ind, :])
 
-        custom_cwt_matrix[ind, :] = convolve_cosine_sim_based_mod(signal, wavelet_body)
-        print(len(custom_cwt_matrix[ind, :]))
-        input(custom_cwt_matrix[ind, :])
+        # custom_cwt_matrix[ind, :] = convolve_cosine_sim_based_mod(signal, wavelet_body)
+
     # plt.figure()
     # X, Y = np.meshgrid(list(range(len(signal))), scales)
     # plt.pcolormesh(X, Y, np.abs(custom_cwt_matrix), cmap='viridis')
@@ -214,7 +213,7 @@ fs = 500
 sig = sigTotest(fs=fs, part_t=0.1)
 t = np.arange(0, len(sig)/fs, 1/fs)
 num_scales = 80
-scales = np.arange(0.1, num_scales,0.1)
+scales = np.arange(3, num_scales,1)
 
 
 # omega0 = 5

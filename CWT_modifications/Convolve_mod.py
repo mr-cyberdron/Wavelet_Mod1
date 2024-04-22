@@ -1,4 +1,6 @@
-from Amp_correction_coefs import def_window,rectangular_window,tukey_window,normalized_cosine_similarity
+import matplotlib.pyplot as plt
+
+from Amp_correction_coefs import def_window,rectangular_window,tukey_window,normalized_cosine_similarity,dot_prod
 import numpy as np
 
 
@@ -37,7 +39,7 @@ def convolve_same2(a, b):
     return result[start:end]
 
 
-def convolve_cosine_sim_based_mod(sig, wavelet):
+def convolve_cosine_sim_based_mod(sig, wavelet, target_value):
     if len(wavelet)%2 != 0:
         wavelet = wavelet[1:]
     wavle_half_pos = int(np.round(len(wavelet)/2))
@@ -52,11 +54,46 @@ def convolve_cosine_sim_based_mod(sig, wavelet):
         stop_sig_point = min(i + wavle_half_pos , len(sig))
         compared_part = sig[start_sig_point:stop_sig_point]
 
-
-        similarity_results_mass.append(normalized_cosine_similarity(compared_part,wavelet_part))
+        # plt.figure()
+        # plt.title((str(normalized_cosine_similarity(compared_part,wavelet_part))))
+        # plt.subplot(2,1,1)
+        # plt.plot(compared_part)
+        # plt.subplot(2,1,2)
+        # plt.plot(wavelet_part)
+        # plt.show()
+        #
+        # similarity_result = normalized_cosine_similarity(compared_part,wavelet_part)
+        # plt.figure()
+        # plt.subplot(3,1,1)
+        # plt.plot(compared_part)
+        # plt.subplot(3, 1, 2)
+        # plt.plot(wavelet_part)
+        # plt.subplot(3, 1, 3)
+        # plt.plot(similarity_result)
+        # plt.show()
+        similarity_results_mass.append(normalized_cosine_similarity(compared_part,wavelet_part, target_value))
         # similarity_results_mass[i] = normalized_cosine_similarity(compared_part, np.real(wavelet_part))
 
-    return similarity_results_mass
+    return np.array(similarity_results_mass)
+
+def convolve_mod(sig, wavelet):
+    if len(wavelet)%2 != 0:
+        wavelet = wavelet[1:]
+    wavle_half_pos = int(np.round(len(wavelet)/2))
+
+    conv_mass = []
+    for i in range(len(sig)):
+        wavelet_start_pos = max(wavle_half_pos-i, 0)
+        wavelet_end_pos = min(wavle_half_pos + (len(sig) - i),len(wavelet))
+        wavelet_part = wavelet[wavelet_start_pos:wavelet_end_pos]
+
+        start_sig_point = max(i - wavle_half_pos, 0)
+        stop_sig_point = min(i + wavle_half_pos , len(sig))
+        compared_part = sig[start_sig_point:stop_sig_point]
+
+        conv_mass.append(dot_prod(compared_part,wavelet_part))
+
+    return np.array(conv_mass)
 
 
 
