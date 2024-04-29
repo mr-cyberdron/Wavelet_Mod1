@@ -91,7 +91,7 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
     generated_wavelets_mass = []
     # scale_corrections_mass = []
     for i, scale in enumerate(scales):
-        print(f'scale {i}/{len(scales)}')
+        #print(f'scale {i}/{len(scales)}')
         t_wavelet = np.arange(-len(signal) / 2, len(signal) / 2)
         wavelet_data = wavelet_function(t_wavelet / scale, w = w0) / np.sqrt(scale) * dt
 
@@ -118,6 +118,7 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
         # -----------------------------#
         # wavelet_data = wavelet_data[::-1]
         # output[i, :] = np.convolve(signal, np.conj(wavelet_data), mode='same')
+        # output[i, :] = np.convolve(signal, wavelet_data, mode='same')
         # output[i, :] = convolve_same2(signal, np.conj(wavelet_data))
         # output[i, :] = custom_conv_with_metric(signal, np.conj(wavelet_data))
 

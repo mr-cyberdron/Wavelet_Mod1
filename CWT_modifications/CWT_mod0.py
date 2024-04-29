@@ -1,5 +1,11 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from Artifitial_signal_creation import sigTotest
+from Artifitial_signal_creation import simulate_ecg_with_VLP_ALP
+from Convolve_mod import convolve_same2, custom_conv_with_metric, convolve_cosine_sim_based_mod, convolve_mod
+import copy
+
+
 
 def morlet_wavelet(t, w=6.0):
     wavelet = np.exp(1j * w * t) * np.exp(-0.5 * t ** 2) * np.pi ** (-0.25)
@@ -55,15 +61,20 @@ def plot_spectrum_of_wavelets_mass(wavelet_mass, dt, scales):
         plt.grid(True)
     plt.show()
 
-def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelets_spectrum = False):
+def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelets_spectrum = False,
+        Amp_correction_target_amp = 0.025):
     output = np.zeros((len(scales), len(signal)), dtype=np.complex_)
     generated_wavelets_mass = []
     for i, scale in enumerate(scales):
+        print(f'{i}/{len(scales)}')
         t_wavelet = np.arange(-len(signal) / 2, len(signal) / 2)
         wavelet_data = wavelet_function(t_wavelet / scale, w = w0) / np.sqrt(scale) * dt
 
         #-----Plot Wavelet spectrum----#
         total_freq = scale_to_frequency(scale,w0,fs)
+        wavelet_data = (wavelet_data / max(wavelet_data)) * Amp_correction_target_amp
+
+
         # plt.figure()
         # plt.plot(wavelet_data)
         # plt.show()
@@ -71,7 +82,8 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
         generated_wavelets_mass.append(wavelet_data)
         # -----------------------------#
 
-        output[i, :] = np.convolve(signal, np.conj(wavelet_data), mode='same')
+        # output[i, :] = np.convolve(signal, np.conj(wavelet_data), mode='same')
+        output[i, :] = convolve_mod(signal, np.conj(wavelet_data))
     # -----Plot Wavelet spectrums----#
     if plot_wavelets_spectrum:
         print('Wavelets spectrum plot...')
@@ -79,11 +91,15 @@ def cwt(signal, scales, wavelet_function, dt=1.0, fs = 100, w0 = 6, plot_wavelet
     # -------------------------------#
     return output
 
-def icwt(cwt_coefficients, scales, wavelet_function, dt=1.0, ds = 1.0):
+def icwt(cwt_coefficients, scales, wavelet_function, dt=1.0, ds = 1.0, Amp_correction_target_amp = 0.025):
     reconstructed_signal = np.zeros(len(cwt_coefficients[0]))
     for i, scale in enumerate(scales):
         wavelet_data = wavelet_function(
             np.arange(-len(reconstructed_signal) / 2, len(reconstructed_signal) / 2) / scale) / np.sqrt(scale)* dt * ds
+
+        wavelet_data_corr = (wavelet_data / max(wavelet_data)) * Amp_correction_target_amp
+        wavelet_data = (max(wavelet_data)/Amp_correction_target_amp)*wavelet_data_corr
+
         contribution = np.convolve(cwt_coefficients[i, :], wavelet_data[::-1], mode='same')
         reconstructed_signal += np.real(contribution) / (scale**2)
 
@@ -92,52 +108,74 @@ def icwt(cwt_coefficients, scales, wavelet_function, dt=1.0, ds = 1.0):
     reconstruction_factor = np.sum((np.abs(factor_kernel)) ** 2)
     return reconstructed_signal / reconstruction_factor
 
+def scale_to_frequency(scales, w0=6, fs=100):
+    scales = np.array(scales)
+    """Перевод масштабов вейвлета в частоты для вейвлета Морле."""
+    dt = 1 / fs  # Вычисление временного шага из частоты дискретизации
+    return w0 / (2 * np.pi * scales * dt)
+
+
+def generate_log_scale_system(freq_from, freq_to, N_cofs):
+    scale_from = scale_to_frequency([freq_to],w0=6,fs=fs)[0]
+    scale_to = scale_to_frequency([freq_from],w0=6,fs=fs)[0]
+
+    print(f"""
+    log_scale system:
+    scale from: {scale_from}
+    scale to: {scale_to}
+    """)
+
+    N_vect = np.array(list(range(N_cofs)))
+
+    r = (scale_to/scale_from)**(1/(N_cofs-1))
+    s_mass = []
+    for k in N_vect:
+        s_val = scale_from*r**k
+        s_mass.append(s_val)
+    return s_mass
+
+
+def freq_to_scale(freq, w0=6, fs=100):
+    dt = 1 / fs
+    scale = w0 / (freq * 2 * np.pi * dt)
+    return scale
+
+def vlp_sig(fs = 1000):
+    sig = simulate_ecg_with_VLP_ALP(duration=4,  # sec
+                                    fs=fs,  # hz
+                                    noise_level=40,  # db
+                                    hr=80,  # bpm
+                                    Std=0,  # bpm
+                                    unregular_comp=False,
+                                    random_state=11,
+                                    lap_amp=25,
+                                    lvp_amp=25)
+    def recalc(fs):
+        x1 = int(round((fs*560)/1000))
+        x2 = int(round((fs*1400)/1000))
+        return x1,x2
+    x1, x2 = recalc(fs)
+    return sig[x1:x2]
+
+
 if __name__ == '__main__':
     fs = 500
-    t_sec = 3
     w0 = 6
-    n_samps = fs * t_sec
-    t = np.linspace(0, t_sec, n_samps)
-    signal = np.sin(2 * np.pi * 5 * t) + np.sin(2 * np.pi * 10 * t) + np.sin(2 * np.pi * 8 * t) * 1
-    scales = np.linspace(3, 100, 20)
+    # signal = sigTotest(fs=fs)
+    signal = vlp_sig(fs=fs)
 
-    scales = np.linspace(3, 50, 10)
+    # signal = signal[360:]
 
-
-
-    def scale_to_frequency(scales, w0=6, fs=100):
-        scales = np.array(scales)
-        """Перевод масштабов вейвлета в частоты для вейвлета Морле."""
-        dt = 1 / fs  # Вычисление временного шага из частоты дискретизации
-        return w0 / (2 * np.pi * scales * dt)
+    t = np.array(list(range(len(signal))))/fs
 
 
-    def generate_log_scale_system(freq_from, freq_to, N_cofs):
-        scale_from = scale_to_frequency([freq_to],w0=6,fs=fs)[0]
-        scale_to = scale_to_frequency([freq_from],w0=6,fs=fs)[0]
-
-        N_vect = np.array(list(range(N_cofs)))
-
-        r = (scale_to/scale_from)**(1/(N_cofs-1))
-        s_mass = []
-        for k in N_vect:
-            s_val = scale_from*r**k
-            s_mass.append(s_val)
-        return s_mass
+    scales = np.linspace(3, 200, 50)
 
 
-
-    scales = generate_log_scale_system(10,150,10)
-
-
-    def freq_to_scale(freq, w0=6, fs=100):
-        dt = 1 / fs
-        scale = w0 / (freq * 2 * np.pi * dt)
-        return scale
+    # scales = generate_log_scale_system(1.5,250,50)
 
 
     freqs = scale_to_frequency(scales,w0 = 6,fs = fs)
-
 
 
     cwt_coefficients = cwt(signal, scales, morlet_wavelet, dt=1, fs=fs,w0=6, plot_wavelets_spectrum=False)
@@ -152,27 +190,40 @@ if __name__ == '__main__':
     plt.title('Continuous Wavelet Transform (CWT) with Morlet Wavelet')
     plt.show(block=False)
 
+
+    fig, axs = plt.subplots(3, 1, figsize=(7, 5), gridspec_kw={'height_ratios': [2, 1,1]})
+
+    axs[1].plot(t, signal, label='Original Signal')
+    axs[1].legend()
+    axs[1].set_ylabel('Amplitude [mV]')
+
+    start_time = 0.093
+    end_time = 0.1267
+    start_time2 = 0.2484
+    end_time2 = 0.2807
+    red_part = copy.deepcopy(signal)
+    indices_to_keep = np.r_[np.round(start_time * fs).astype(int):np.round(end_time * fs).astype(int),
+                      np.round(start_time2 * fs).astype(int):np.round(end_time2 * fs).astype(
+                          int)]  # объединяем диапазоны, Python использует включительные диапазоны для срезов
+    red_part[~np.in1d(np.arange(red_part.size), indices_to_keep)] = np.nan  # заменяем все, что вне диапазонов
+
+    axs[1].plot(t, red_part, c='r')
+
+
+
     freqs = scale_to_frequency(scales, w0, fs)
-    plt.figure()
     X, Y = np.meshgrid(t, freqs)
-    plt.pcolormesh(X, Y, np.abs(cwt_coefficients), cmap='viridis')  # Используем цветовую карту 'viridis'
-    # plt.ylim([0, 50])
-    plt.colorbar(label='Magnitude')
-    plt.xlabel('Time')
-    plt.ylabel('frequency')
-    plt.title('Continuous Wavelet Transform (CWT) with Morlet Wavelet')
-    plt.show(block=False)
+    im = axs[0].pcolormesh(X, Y, np.abs(cwt_coefficients), cmap='viridis')  # Используем цветовую карту 'viridis'
+    plt.colorbar(im, ax=axs[0])
+    plt.colorbar(im, ax=axs[1])
+    axs[0].set_ylabel('Frequency [Hz]')
+    axs[0].set_title('Wavelet transform')
 
-    plt.figure(figsize=(10, 6))
-    plt.subplot(2, 1, 1)
-    plt.plot(t, signal, label='Original Signal')
-    plt.legend()
-    plt.title('Original Signal')
-
-    plt.subplot(2, 1, 2)
-    plt.plot(t, reconstructed_signal, label='Reconstructed Signal', color='orange')
-    plt.legend()
-    plt.title('Reconstructed Signal')
+    axs[2].plot(t, reconstructed_signal, label='Reconstructed Signal', color='orange')
+    axs[2].legend()
+    plt.colorbar(im, ax=axs[2])
+    axs[2].set_xlabel('time [s]')
+    axs[2].set_ylabel('Amplitude')
 
     plt.tight_layout()
     plt.show()
